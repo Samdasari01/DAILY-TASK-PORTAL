@@ -129,7 +129,7 @@
             box-shadow: 0 0 15px var(--primary-blue);
         }
 
-        /* AI Enhance Button */
+        /* AI Enhance Button - Removed per request, keeping class for future use if needed */
         button.ai-btn {
             background: linear-gradient(135deg, var(--ai-purple), #4b7bec);
             color: white;
@@ -474,8 +474,11 @@
                 <label>Initial Notes (Optional)</label>
                 <textarea id="inNotes" rows="2" placeholder="Add details..."></textarea>
             </div>
-            <div class="full-width">
-                <button class="action-btn" onclick="addNewTask()" style="width: 100%">+ ADD TO PORTAL</button>
+            <div class="full-width" style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <!-- AI Button Removed as requested, restored single Add button -->
+                <button class="action-btn" onclick="addNewTask()" style="flex: 1;">
+                    + ADD TO PORTAL
+                </button>
             </div>
         </div>
 
@@ -611,7 +614,7 @@
                 return;
             }
 
-            tasksData = data;
+            tasksData = data || [];
             renderPortal();
         }
 
@@ -822,76 +825,58 @@
         }
 
         // ==========================================
-        //   GEMINI AI INTEGRATION
+        //  🤖 GEMINI AI INTEGRATION (ROBUST FALLBACK)
         // ==========================================
 
         async function callGemini(prompt) {
-            if (!apiKey) {
-                alert("AI Error: No Google API Key found in code.");
+            const thisKey = apiKey; 
+            if (!thisKey || thisKey.trim() === "") {
+                showRobotMessage("AI ERROR: API KEY MISSING.");
                 return null;
             }
 
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
-            const payload = {
-                contents: [{ parts: [{ text: prompt }] }]
-            };
+            // List of models to try in order of preference/stability
+            const modelsToTry = [
+                'gemini-1.5-flash',
+                'gemini-1.5-pro',
+                'gemini-1.0-pro',
+                'gemini-pro' // Added legacy alias
+            ];
 
-            try {
-                const response = await fetch(url, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
+            let lastErrorMsg = "Unknown Error";
 
-                const data = await response.json();
-                return data.candidates[0].content.parts[0].text;
-            } catch (error) {
-                console.error("Gemini API Error:", error);
-                return null;
-            }
-        }
-
-        // Feature 1: Enhance Directive
-        async function enhanceDirective() {
-            const rawActivity = document.getElementById('inActivity').value;
-            const rawNotes = document.getElementById('inNotes').value;
-
-            if (!rawActivity) {
-                showRobotMessage("INPUT ERROR: ENTER ACTIVITY NAME FIRST.");
-                return;
-            }
-
-            // UI Feedback
-            document.getElementById('inActivity').value = "Enhancing...";
-            document.getElementById('aiAvatar').classList.add('processing');
-
-            const prompt = `
-                You are a futuristic task manager AI. The user has input a task: "${rawActivity}" with notes: "${rawNotes}".
-                1. Rewrite the task name to be professional, concise, and futuristic (e.g., 'Fix sink' -> 'Hydraulic System Repair').
-                2. Generate a 3-item bulleted checklist for this task to put in the notes.
-                3. Return ONLY valid JSON in this format: { "activity": "New Name", "notes": "New Notes" }. Do not use Markdown formatting.
-            `;
-
-            const result = await callGemini(prompt);
-            document.getElementById('aiAvatar').classList.remove('processing');
-
-            if (result) {
+            for (const model of modelsToTry) {
                 try {
-                    // Clean code fences if Gemini adds them
-                    const cleanJson = result.replace(/```json/g, '').replace(/```/g, '').trim();
-                    const data = JSON.parse(cleanJson);
-                    document.getElementById('inActivity').value = data.activity;
-                    document.getElementById('inNotes').value = data.notes;
-                    showRobotMessage("DIRECTIVE OPTIMIZED. READY FOR UPLOAD.");
+                    console.log(`Attempting AI model: ${model}...`);
+                    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${thisKey}`;
+                    
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+                    });
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        // Success! Return the text
+                        return data.candidates?.[0]?.content?.parts?.[0]?.text || null;
+                    } else {
+                        // Log specific error but continue loop
+                        const errorData = await response.json();
+                        lastErrorMsg = errorData.error?.message || response.statusText;
+                        console.warn(`Model ${model} failed: ${lastErrorMsg}`);
+                    }
                 } catch (e) {
-                    console.error(e);
-                    document.getElementById('inActivity').value = rawActivity; // Revert
-                    showRobotMessage("OPTIMIZATION FAILED. TRY AGAIN.");
+                    console.warn(`Network error for ${model}:`, e);
+                    lastErrorMsg = "Network/Connection Error";
                 }
-            } else {
-                 document.getElementById('inActivity').value = rawActivity;
-                 showRobotMessage("CONNECTION ERROR.");
             }
+            
+            // If we reach here, all models failed
+            console.error("All AI models failed. Last error:", lastErrorMsg);
+            // Show the actual error to the user via the robot bubble for better debugging
+            showRobotMessage(`SYSTEM FAILURE: ${lastErrorMsg.substring(0, 40)}...`); 
+            return null;
         }
 
         // Feature 2: Tactical Advisor
@@ -901,6 +886,13 @@
 
         async function requestAiAnalysis() {
             closeModal('tacticalModal');
+
+            // NEW: Empty List Check
+            if (!tasksData || tasksData.length === 0) {
+                showRobotMessage("NO DATA TO ANALYZE. ADD TASKS FIRST.");
+                return;
+            }
+
             showRobotMessage("SCANNING TASK DATABASE... STAND BY.");
             document.getElementById('aiAvatar').classList.add('processing');
 
@@ -920,7 +912,11 @@
 
             const reply = await callGemini(prompt);
             document.getElementById('aiAvatar').classList.remove('processing');
-            if (reply) showRobotMessage(reply);
+            
+            // Note: The callGemini function now handles error display internally via showRobotMessage
+            if (reply) {
+                showRobotMessage(reply);
+            }
         }
 
         async function requestAiMotivation() {
@@ -929,7 +925,11 @@
             const prompt = "Give me a short, intense futuristic motivational quote for a worker completing tasks. Max 20 words.";
             const reply = await callGemini(prompt);
             document.getElementById('aiAvatar').classList.remove('processing');
-            if (reply) showRobotMessage(reply);
+            
+             // Note: The callGemini function now handles error display internally via showRobotMessage
+            if (reply) {
+                showRobotMessage(reply);
+            }
         }
 
         function showRobotMessage(msg) {
@@ -983,7 +983,6 @@
         window.openNotesUI = openNotesUI;
         window.deleteTask = deleteTask;
         window.triggerRobot = openTacticalMenu; // Changed to open menu
-        window.enhanceDirective = enhanceDirective;
         window.requestAiAnalysis = requestAiAnalysis;
         window.requestAiMotivation = requestAiMotivation;
 
