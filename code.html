@@ -1,0 +1,992 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DAILY TASKS PORTAL | AI ENHANCED</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #0a0b10;
+            --bg-panel: rgba(20, 25, 35, 0.7);
+            --primary-blue: #00a8ff;
+            --alert-red: #e84118;
+            --success-green: #4cd137;
+            --warning-yellow: #fbc531;
+            --ai-purple: #a55eea; /* New AI Color */
+            --text-main: #f5f6fa;
+            --text-dim: #7f8fa6;
+            --border-color: rgba(0, 168, 255, 0.2);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            background-image: 
+                radial-gradient(circle at 50% 50%, rgba(0, 168, 255, 0.05) 0%, transparent 50%),
+                linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 100% 100%, 30px 30px, 30px 30px;
+            color: var(--text-main);
+            font-family: 'Rajdhani', sans-serif;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        /* --- HEADER --- */
+        header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 30px;
+            border-bottom: 2px solid var(--primary-blue);
+            padding-bottom: 15px;
+        }
+
+        h1 {
+            font-size: 2.2rem;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            color: var(--primary-blue);
+            text-shadow: 0 0 15px rgba(0, 168, 255, 0.4);
+        }
+
+        .date-display {
+            font-size: 1.2rem;
+            color: var(--text-dim);
+        }
+
+        /* --- INPUT PANEL --- */
+        .input-panel {
+            background: var(--bg-panel);
+            border: 1px solid var(--border-color);
+            padding: 20px;
+            border-radius: 8px;
+            display: grid;
+            grid-template-columns: 1fr 1.5fr;
+            gap: 15px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            position: relative;
+        }
+
+        .full-width { grid-column: 1 / -1; }
+
+        label {
+            display: block;
+            color: var(--text-dim);
+            font-size: 0.8rem;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        input, textarea, select {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid #333;
+            color: var(--text-main);
+            padding: 10px;
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1rem;
+            outline: none;
+            transition: 0.3s;
+            border-radius: 4px;
+        }
+
+        input:focus, textarea:focus, select:focus {
+            border-color: var(--primary-blue);
+            box-shadow: 0 0 10px rgba(0, 168, 255, 0.2);
+        }
+
+        /* Standard Buttons */
+        button.action-btn {
+            background: var(--primary-blue);
+            color: #000;
+            border: none;
+            padding: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: 0.3s;
+            border-radius: 4px;
+        }
+
+        button.action-btn:hover {
+            background: white;
+            box-shadow: 0 0 15px var(--primary-blue);
+        }
+
+        /* AI Enhance Button */
+        button.ai-btn {
+            background: linear-gradient(135deg, var(--ai-purple), #4b7bec);
+            color: white;
+            border: none;
+            padding: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: 0.3s;
+            border-radius: 4px;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        button.ai-btn:hover {
+            box-shadow: 0 0 20px var(--ai-purple);
+            transform: scale(1.02);
+        }
+
+        /* --- PROJECT GROUPS --- */
+        .project-group {
+            margin-bottom: 30px;
+        }
+
+        .project-header {
+            font-size: 1.4rem;
+            color: var(--warning-yellow);
+            border-left: 5px solid var(--warning-yellow);
+            padding-left: 15px;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            background: linear-gradient(90deg, rgba(251, 197, 49, 0.1), transparent);
+            padding-top: 5px;
+            padding-bottom: 5px;
+        }
+
+        /* --- ACTIVITY CARDS --- */
+        .activity-card {
+            background: rgba(255,255,255,0.02);
+            border: 1px solid rgba(255,255,255,0.05);
+            margin-bottom: 10px;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            transition: 0.2s;
+        }
+
+        .activity-card:hover {
+            background: rgba(255,255,255,0.04);
+            border-color: rgba(255,255,255,0.1);
+        }
+
+        .card-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 10px;
+        }
+
+        .activity-name {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: white;
+        }
+
+        .status-container {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 5px;
+        }
+
+        .status-badge {
+            font-size: 0.8rem;
+            padding: 4px 12px;
+            border-radius: 4px;
+            text-transform: uppercase;
+            font-weight: bold;
+            display: inline-block;
+        }
+
+        .status-Incomplete { background: rgba(232, 65, 24, 0.2); color: var(--alert-red); border: 1px solid var(--alert-red); }
+        .status-Approval { background: rgba(251, 197, 49, 0.2); color: var(--warning-yellow); border: 1px solid var(--warning-yellow); }
+        .status-Completed { background: rgba(76, 209, 55, 0.2); color: var(--success-green); border: 1px solid var(--success-green); }
+
+        .notes-section {
+            margin-top: 5px;
+            background: rgba(0,0,0,0.3);
+            padding: 10px;
+            border-left: 2px solid var(--text-dim);
+            font-size: 0.9rem;
+            color: var(--text-dim);
+            white-space: pre-wrap; 
+            line-height: 1.4;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .timestamp-note {
+            color: var(--primary-blue);
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-right: 5px;
+        }
+
+        /* Explicit Action Buttons */
+        .card-actions {
+            margin-top: 15px;
+            display: flex;
+            justify-content: flex-start;
+            gap: 10px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            padding-top: 10px;
+        }
+
+        .icon-btn {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: #ccc;
+            padding: 6px 12px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            transition: 0.2s;
+            font-family: 'Rajdhani', sans-serif;
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+
+        .icon-btn:hover { background: rgba(255,255,255,0.1); border-color: white; color: white; }
+        
+        .btn-status:hover { border-color: var(--warning-yellow); color: var(--warning-yellow); }
+        .btn-note:hover { border-color: var(--primary-blue); color: var(--primary-blue); }
+        .btn-delete:hover { border-color: var(--alert-red); color: var(--alert-red); }
+
+        /* --- AI COMPANION STYLES --- */
+        .ai-companion-container {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            z-index: 3000;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            pointer-events: none; /* Let clicks pass through when hidden */
+        }
+
+        .ai-avatar {
+            width: 60px;
+            height: 60px;
+            background: #000;
+            border: 2px solid var(--primary-blue);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 30px;
+            box-shadow: 0 0 20px var(--primary-blue);
+            cursor: pointer;
+            pointer-events: auto;
+            transition: 0.3s;
+            animation: float 3s ease-in-out infinite;
+            background-image: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.1), transparent);
+        }
+
+        .ai-avatar.processing {
+            border-color: var(--ai-purple);
+            box-shadow: 0 0 30px var(--ai-purple);
+            animation: pulse-purple 1s infinite;
+        }
+
+        .ai-avatar:hover { transform: scale(1.1); box-shadow: 0 0 30px var(--success-green); border-color: var(--success-green); }
+
+        .ai-message-bubble {
+            background: rgba(10, 10, 15, 0.95);
+            border: 1px solid var(--primary-blue);
+            color: var(--primary-blue);
+            padding: 15px;
+            border-radius: 10px 10px 0 10px;
+            margin-bottom: 15px;
+            max-width: 300px;
+            text-align: right;
+            box-shadow: 0 0 15px rgba(0, 168, 255, 0.3);
+            opacity: 0;
+            transform: translateY(20px);
+            transition: 0.5s;
+            pointer-events: auto;
+            font-size: 0.9rem;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+            white-space: pre-wrap;
+        }
+
+        .ai-message-bubble.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-8px); }
+            100% { transform: translateY(0px); }
+        }
+
+        @keyframes pulse-purple {
+            0% { box-shadow: 0 0 10px var(--ai-purple); }
+            50% { box-shadow: 0 0 30px var(--ai-purple); }
+            100% { box-shadow: 0 0 10px var(--ai-purple); }
+        }
+
+        /* --- MODALS --- */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(8px);
+        }
+
+        .modal-content {
+            background: #0f0f0f;
+            border: 1px solid var(--primary-blue);
+            padding: 30px;
+            text-align: center;
+            width: 350px;
+            box-shadow: 0 0 50px rgba(0, 168, 255, 0.3);
+            border-radius: 8px;
+            position: relative;
+        }
+
+        .modal-title { color: var(--primary-blue); margin-bottom: 20px; letter-spacing: 2px; }
+        
+        #passInput {
+            text-align: center;
+            letter-spacing: 5px;
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+            background: #000;
+            border: 1px solid #333;
+            color: white;
+        }
+
+        /* Status Selection Buttons */
+        .status-btn {
+            width: 100%;
+            padding: 15px;
+            margin-bottom: 12px;
+            background: #1a1a1a;
+            border: 1px solid #333;
+            color: white;
+            cursor: pointer;
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1.1rem;
+            transition: 0.2s;
+            text-transform: uppercase;
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .status-btn:hover { transform: translateX(5px); }
+        
+        .btn-incomplete:hover { border-color: var(--alert-red); color: var(--alert-red); box-shadow: 0 0 10px var(--alert-red); }
+        .btn-approval:hover { border-color: var(--warning-yellow); color: var(--warning-yellow); box-shadow: 0 0 10px var(--warning-yellow); }
+        .btn-completed:hover { border-color: var(--success-green); color: var(--success-green); box-shadow: 0 0 10px var(--success-green); }
+
+        /* Tactical Modal Buttons */
+        .tactical-btn {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 10px;
+            background: rgba(165, 94, 234, 0.1);
+            border: 1px solid var(--ai-purple);
+            color: white;
+            cursor: pointer;
+            font-family: 'Rajdhani', sans-serif;
+            text-transform: uppercase;
+            transition: 0.3s;
+        }
+        .tactical-btn:hover { background: var(--ai-purple); color: black; box-shadow: 0 0 15px var(--ai-purple); }
+
+        /* Config Warning */
+        #config-warning {
+            display: none;
+            background: rgba(232, 65, 24, 0.2);
+            border: 1px solid var(--alert-red);
+            padding: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        #api-key-warning {
+            display: none;
+            background: rgba(165, 94, 234, 0.2);
+            border: 1px solid var(--ai-purple);
+            padding: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+            font-size: 0.9rem;
+        }
+
+        @media(max-width: 600px) {
+            .input-panel { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- Config Warnings -->
+        <div id="config-warning">⚠️ SUPABASE NOT CONFIGURED: Add your API Keys to index.html</div>
+        <div id="api-key-warning">⚠️ GEMINI API NOT CONFIGURED: Add your Google API Key for AI features.</div>
+
+        <header>
+            <h1>DAILY TASKS PORTAL</h1>
+            <div class="date-display" id="currentDate"></div>
+        </header>
+
+        <!-- Input Area -->
+        <div class="input-panel">
+            <div>
+                <label>Project Name</label>
+                <input type="text" id="inProject" placeholder="e.g. AGM PROJECT">
+            </div>
+            <div>
+                <label>Activity / Task</label>
+                <input type="text" id="inActivity" placeholder="e.g. Cutting Pending">
+            </div>
+            <div class="full-width">
+                <label>Initial Notes (Optional)</label>
+                <textarea id="inNotes" rows="2" placeholder="Add details..."></textarea>
+            </div>
+            <div class="full-width">
+                <button class="action-btn" onclick="addNewTask()" style="width: 100%">+ ADD TO PORTAL</button>
+            </div>
+        </div>
+
+        <!-- Task Feed -->
+        <div id="portalFeed">
+            <div style="text-align: center; color: #555;">LOADING PORTAL DATA...</div>
+        </div>
+    </div>
+
+    <!-- AI Companion -->
+    <div class="ai-companion-container">
+        <div class="ai-message-bubble" id="aiBubble">
+            SYSTEM ONLINE. CLICK FOR TACTICAL SUPPORT.
+        </div>
+        <div class="ai-avatar" onclick="openTacticalMenu()" id="aiAvatar" title="Tactical Advisor">
+            🤖
+        </div>
+    </div>
+
+    <!-- Security Modal -->
+    <div id="authModal" class="modal-overlay">
+        <div class="modal-content" style="border-color: var(--alert-red);">
+            <h3 class="modal-title" style="color: var(--alert-red);">SECURITY CHECK</h3>
+            <p style="margin-bottom: 10px; font-size: 0.8rem; color: #888;">ENTER ACCESS CODE TO MODIFY</p>
+            <input type="password" id="passInput" placeholder="******" maxlength="6">
+            <button class="action-btn" onclick="submitAuth()" style="background: var(--alert-red); color: white; width: 100%;">AUTHENTICATE</button>
+            <button onclick="closeModal('authModal')" style="background:none; border:none; color:#555; margin-top:10px; cursor:pointer;">CANCEL</button>
+        </div>
+    </div>
+
+    <!-- Status Selection Modal -->
+    <div id="statusModal" class="modal-overlay">
+        <div class="modal-content">
+            <h3 class="modal-title">UPDATE STATUS</h3>
+            <p style="margin-bottom: 15px; font-size: 0.9rem; color: #888;">CHOOSE NEW STATUS</p>
+            
+            <button class="status-btn btn-incomplete" onclick="selectStatus('Incomplete')">Incomplete <span>🔴</span></button>
+            <button class="status-btn btn-approval" onclick="selectStatus('Approval Pending')">Approval Pending <span>🟡</span></button>
+            <button class="status-btn btn-completed" onclick="selectStatus('Completed')">Completed <span>🟢</span></button>
+            
+            <button onclick="closeModal('statusModal')" style="background:none; border:none; color:#555; margin-top:10px; cursor:pointer;">CANCEL</button>
+        </div>
+    </div>
+
+    <!-- Notes Entry Modal -->
+    <div id="notesModal" class="modal-overlay">
+        <div class="modal-content">
+            <h3 class="modal-title">WORK DIARY</h3>
+            <p style="margin-bottom: 10px; font-size: 0.9rem; color: #888;">ADD NEW ENTRY (AUTO-TIMESTAMPED)</p>
+            <textarea id="newNoteInput" rows="4" placeholder="What progress was made today?"></textarea>
+            <button class="action-btn" onclick="saveNote()" style="width: 100%; margin-top: 10px;">SAVE ENTRY</button>
+            <button onclick="closeModal('notesModal')" style="background:none; border:none; color:#555; margin-top:10px; cursor:pointer;">CANCEL</button>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div id="deleteModal" class="modal-overlay">
+        <div class="modal-content" style="border-color: var(--alert-red);">
+            <h3 class="modal-title" style="color: var(--alert-red);">WARNING</h3>
+            <p style="margin-bottom: 20px; font-size: 0.9rem; color: #ccc;">
+                ARE YOU SURE YOU WANT TO DELETE THIS TASK?<br>
+                THIS ACTION CANNOT BE UNDONE.
+            </p>
+            <button class="action-btn" onclick="executeDelete()" style="width: 100%; background: var(--alert-red); color: white;">PERMANENTLY DELETE</button>
+            <button onclick="closeModal('deleteModal')" style="background:none; border:none; color:#555; margin-top:10px; cursor:pointer;">CANCEL</button>
+        </div>
+    </div>
+
+    <!-- AI Tactical Menu Modal -->
+    <div id="tacticalModal" class="modal-overlay">
+        <div class="modal-content" style="border-color: var(--ai-purple);">
+            <h3 class="modal-title" style="color: var(--ai-purple);">TACTICAL UPLINK</h3>
+            <p style="margin-bottom: 20px; font-size: 0.9rem; color: #ccc;">
+                SELECT AI SUPPORT FUNCTION
+            </p>
+            <button class="tactical-btn" onclick="requestAiAnalysis()">📊 ANALYZE WORKLOAD</button>
+            <button class="tactical-btn" onclick="requestAiMotivation()">💬 MOTIVATION PROTOCOL</button>
+            <button onclick="closeModal('tacticalModal')" style="background:none; border:none; color:#555; margin-top:10px; cursor:pointer;">CLOSE UPLINK</button>
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        //  ⚠️ CONFIGURATION REQUIRED
+        // ==========================================
+        const SUPABASE_URL = 'https://lgzcivaylrvrrhpzomif.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxnemNpdmF5bHJ2cnJocHpvbWlmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAyMTAxMzIsImV4cCI6MjA4NTc4NjEzMn0.ckr7PmpQqn8bQ7TgOeoqxMhr762ET_keQZ6GRW5BXJ0';
+        
+        // ADD YOUR GOOGLE API KEY HERE FOR AI FEATURES
+        const GOOGLE_API_KEY = "AIzaSyACPt6g67W1daPahC1YuPrDtZCdaF8m6A0"; 
+        const apiKey = typeof GOOGLE_API_KEY !== 'undefined' ? GOOGLE_API_KEY : "";
+        // ==========================================
+
+        const ACCESS_CODE = "223322";
+
+        // Init Supabase
+        const { createClient } = supabase;
+        let db = null;
+        let tasksData = [];
+        
+        // State variables for Auth flow
+        let pendingAction = null; 
+        let activeTaskId = null; // Used for modals
+
+        // Check Configuration
+        if (SUPABASE_URL === 'YOUR_SUPABASE_URL' || !SUPABASE_URL.startsWith('http')) {
+            document.getElementById('config-warning').style.display = 'block';
+        } else {
+            db = createClient(SUPABASE_URL, SUPABASE_KEY);
+            fetchTasks();
+        }
+
+        if (!apiKey) {
+            document.getElementById('api-key-warning').style.display = 'block';
+        }
+
+        // Set Date
+        document.getElementById('currentDate').innerText = new Date().toLocaleDateString('en-GB', { 
+            weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' 
+        }).toUpperCase();
+
+        // --- FETCH & RENDER ---
+        async function fetchTasks() {
+            if(!db) return;
+            const { data, error } = await db
+                .from('tasks')
+                .select('*')
+                .order('project_name', { ascending: true })
+                .order('id', { ascending: false });
+
+            if (error) {
+                console.error(error);
+                return;
+            }
+
+            tasksData = data;
+            renderPortal();
+        }
+
+        function renderPortal() {
+            const feed = document.getElementById('portalFeed');
+            feed.innerHTML = '';
+
+            if (tasksData.length === 0) {
+                feed.innerHTML = '<div style="text-align:center; padding: 40px; color: #444; border: 1px dashed #333;">NO ACTIVE PROJECTS</div>';
+                return;
+            }
+
+            // Group by Project
+            const projects = {};
+            tasksData.forEach(task => {
+                const pName = task.project_name.toUpperCase();
+                if (!projects[pName]) projects[pName] = [];
+                projects[pName].push(task);
+            });
+
+            // Render Groups
+            for (const [pName, tasks] of Object.entries(projects)) {
+                const groupDiv = document.createElement('div');
+                groupDiv.className = 'project-group';
+
+                let html = `<div class="project-header">${escapeHtml(pName)}</div>`;
+
+                tasks.forEach(task => {
+                    const statusClass = task.status.includes('Approval') ? 'Approval' : 
+                                      task.status === 'Completed' ? 'Completed' : 'Incomplete';
+                    
+                    html += `
+                        <div class="activity-card">
+                            <div class="card-top">
+                                <span class="activity-name">${escapeHtml(task.activity_name)}</span>
+                                <div class="status-container">
+                                    <span class="status-badge status-${statusClass}">
+                                        ${task.status}
+                                    </span>
+                                </div>
+                            </div>
+                            
+                            <div class="notes-section">
+                                ${formatNotes(task.notes)}
+                            </div>
+
+                            <!-- EXPLICIT ACTION BUTTONS -->
+                            <div class="card-actions">
+                                <button class="icon-btn btn-status" onclick="requestAuth(() => openStatusUI(${task.id}))">
+                                    ⚡ CHANGE STATUS
+                                </button>
+                                <button class="icon-btn btn-note" onclick="requestAuth(() => openNotesUI(${task.id}))">
+                                    📝 ADD DIARY
+                                </button>
+                                <button class="icon-btn btn-delete" onclick="requestAuth(() => deleteTask(${task.id}))">
+                                    🗑️ DELETE
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                groupDiv.innerHTML = html;
+                feed.appendChild(groupDiv);
+            }
+        }
+
+        // --- ACTIONS (NO AUTH REQUIRED) ---
+        async function addNewTask() {
+            if(!db) return alert("Setup Database Keys first.");
+
+            const project = document.getElementById('inProject').value.trim();
+            const activity = document.getElementById('inActivity').value.trim();
+            let notes = document.getElementById('inNotes').value.trim();
+
+            if (!project || !activity) return alert("Project Name and Activity are required.");
+
+            // Add timestamp to initial note if present
+            if (notes) {
+                notes = `${getTimestamp()} ${notes}`;
+            }
+
+            const { error } = await db.from('tasks').insert([{
+                project_name: project,
+                activity_name: activity,
+                notes: notes,
+                status: 'Incomplete'
+            }]);
+
+            if (error) alert("Error adding task: " + error.message);
+            else {
+                document.getElementById('inActivity').value = ''; 
+                document.getElementById('inNotes').value = '';
+                fetchTasks();
+            }
+        }
+
+        // --- AUTHENTICATED ACTIONS ---
+        function requestAuth(actionCallback) {
+            console.log("Auth Requested"); // Debug
+            pendingAction = actionCallback;
+            document.getElementById('authModal').style.display = 'flex';
+            document.getElementById('passInput').value = '';
+            document.getElementById('passInput').focus();
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+            // Only clear pendingAction if we are closing a non-auth modal
+            if (modalId !== 'authModal' && modalId !== 'statusModal' && modalId !== 'notesModal' && modalId !== 'deleteModal' && modalId !== 'tacticalModal') {
+                 pendingAction = null;
+            }
+        }
+
+        function submitAuth() {
+            const pass = document.getElementById('passInput').value;
+            if (pass === ACCESS_CODE) {
+                // 1. Capture the action we need to run
+                const actionToRun = pendingAction;
+                
+                // 2. Close the modal (but don't wipe the variable yet)
+                document.getElementById('authModal').style.display = 'none';
+                
+                // 3. Run the action
+                if (actionToRun) {
+                    console.log("Executing pending action...");
+                    actionToRun();
+                }
+                
+                // 4. Reset
+                pendingAction = null;
+            } else {
+                alert("ACCESS DENIED: INVALID CODE");
+                document.getElementById('passInput').value = '';
+            }
+        }
+
+        // --- ACTION HANDLERS ---
+        
+        // 1. Status Selection UI
+        function openStatusUI(id) {
+            console.log("Opening Status UI for ID:", id); // Debug
+            activeTaskId = id;
+            document.getElementById('statusModal').style.display = 'flex';
+        }
+
+        async function selectStatus(newStatus) {
+            if (!activeTaskId) return;
+            const { error } = await db.from('tasks').update({ status: newStatus }).eq('id', activeTaskId);
+            closeModal('statusModal');
+            if (!error) fetchTasks();
+            else alert("Update failed: " + error.message);
+        }
+
+        // 2. Note Appending UI
+        function openNotesUI(id) {
+            console.log("Opening Notes UI for ID:", id); // Debug
+            activeTaskId = id;
+            document.getElementById('newNoteInput').value = ''; // Clear previous
+            document.getElementById('notesModal').style.display = 'flex';
+            document.getElementById('newNoteInput').focus();
+        }
+
+        async function saveNote() {
+            if (!activeTaskId) return;
+            const newEntry = document.getElementById('newNoteInput').value.trim();
+
+            if (newEntry) {
+                // Get existing notes to append to
+                const currentTask = tasksData.find(t => t.id === activeTaskId);
+                const prevNotes = currentTask.notes || "";
+
+                // Logic: Append timestamp + new entry
+                const timeStampedEntry = `${getTimestamp()} ${newEntry}`;
+                const finalNotes = prevNotes ? `${prevNotes}\n${timeStampedEntry}` : timeStampedEntry;
+
+                const { error } = await db.from('tasks').update({ notes: finalNotes }).eq('id', activeTaskId);
+                if (!error) {
+                    closeModal('notesModal');
+                    fetchTasks();
+                } else {
+                    alert("Error saving note: " + error.message);
+                }
+            } else {
+                closeModal('notesModal'); // Close if empty
+            }
+        }
+
+        // 3. Delete Task Flow
+        function deleteTask(id) {
+            console.log("Opening Delete Confirmation for ID:", id);
+            activeTaskId = id;
+            document.getElementById('deleteModal').style.display = 'flex';
+        }
+
+        async function executeDelete() {
+            if (!activeTaskId) return;
+            
+            const { error } = await db.from('tasks').delete().eq('id', activeTaskId);
+            
+            closeModal('deleteModal');
+            
+            if (!error) {
+                fetchTasks();
+            } else {
+                alert("Delete failed: " + error.message);
+            }
+        }
+
+        // ==========================================
+        //   GEMINI AI INTEGRATION
+        // ==========================================
+
+        async function callGemini(prompt) {
+            if (!apiKey) {
+                alert("AI Error: No Google API Key found in code.");
+                return null;
+            }
+
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+            const payload = {
+                contents: [{ parts: [{ text: prompt }] }]
+            };
+
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await response.json();
+                return data.candidates[0].content.parts[0].text;
+            } catch (error) {
+                console.error("Gemini API Error:", error);
+                return null;
+            }
+        }
+
+        // Feature 1: Enhance Directive
+        async function enhanceDirective() {
+            const rawActivity = document.getElementById('inActivity').value;
+            const rawNotes = document.getElementById('inNotes').value;
+
+            if (!rawActivity) {
+                showRobotMessage("INPUT ERROR: ENTER ACTIVITY NAME FIRST.");
+                return;
+            }
+
+            // UI Feedback
+            document.getElementById('inActivity').value = "Enhancing...";
+            document.getElementById('aiAvatar').classList.add('processing');
+
+            const prompt = `
+                You are a futuristic task manager AI. The user has input a task: "${rawActivity}" with notes: "${rawNotes}".
+                1. Rewrite the task name to be professional, concise, and futuristic (e.g., 'Fix sink' -> 'Hydraulic System Repair').
+                2. Generate a 3-item bulleted checklist for this task to put in the notes.
+                3. Return ONLY valid JSON in this format: { "activity": "New Name", "notes": "New Notes" }. Do not use Markdown formatting.
+            `;
+
+            const result = await callGemini(prompt);
+            document.getElementById('aiAvatar').classList.remove('processing');
+
+            if (result) {
+                try {
+                    // Clean code fences if Gemini adds them
+                    const cleanJson = result.replace(/```json/g, '').replace(/```/g, '').trim();
+                    const data = JSON.parse(cleanJson);
+                    document.getElementById('inActivity').value = data.activity;
+                    document.getElementById('inNotes').value = data.notes;
+                    showRobotMessage("DIRECTIVE OPTIMIZED. READY FOR UPLOAD.");
+                } catch (e) {
+                    console.error(e);
+                    document.getElementById('inActivity').value = rawActivity; // Revert
+                    showRobotMessage("OPTIMIZATION FAILED. TRY AGAIN.");
+                }
+            } else {
+                 document.getElementById('inActivity').value = rawActivity;
+                 showRobotMessage("CONNECTION ERROR.");
+            }
+        }
+
+        // Feature 2: Tactical Advisor
+        function openTacticalMenu() {
+            document.getElementById('tacticalModal').style.display = 'flex';
+        }
+
+        async function requestAiAnalysis() {
+            closeModal('tacticalModal');
+            showRobotMessage("SCANNING TASK DATABASE... STAND BY.");
+            document.getElementById('aiAvatar').classList.add('processing');
+
+            // Convert tasks to a simplified string for AI
+            const taskSummary = tasksData.map(t => `- [${t.project_name}] ${t.activity_name} (${t.status})`).join('\n');
+
+            const prompt = `
+                Act as a Sci-Fi Tactical Advisor AI. 
+                Here is the current mission log (task list):
+                ${taskSummary}
+                
+                Provide a brief, 3-sentence situation report. 
+                1. Identify the biggest bottleneck (Incomplete items).
+                2. Offer one strategic piece of advice on what to prioritize.
+                3. Keep tone robotic, encouraging, and futuristic.
+            `;
+
+            const reply = await callGemini(prompt);
+            document.getElementById('aiAvatar').classList.remove('processing');
+            if (reply) showRobotMessage(reply);
+        }
+
+        async function requestAiMotivation() {
+            closeModal('tacticalModal');
+            document.getElementById('aiAvatar').classList.add('processing');
+            const prompt = "Give me a short, intense futuristic motivational quote for a worker completing tasks. Max 20 words.";
+            const reply = await callGemini(prompt);
+            document.getElementById('aiAvatar').classList.remove('processing');
+            if (reply) showRobotMessage(reply);
+        }
+
+        function showRobotMessage(msg) {
+            const bubble = document.getElementById('aiBubble');
+            bubble.innerText = msg;
+            bubble.classList.add('show');
+            
+            // Auto hide after 8 seconds
+            setTimeout(() => {
+                bubble.classList.remove('show');
+            }, 8000);
+        }
+
+        // Trigger every 5 minutes (300,000 ms) auto-greeting
+        setInterval(() => {
+            if(!document.getElementById('tacticalModal').style.display.includes('flex')) {
+                showRobotMessage("SYSTEM CHECK: ALL SYSTEMS NOMINAL. KEEP WORKING.");
+            }
+        }, 300000);
+
+        // --- UTILS ---
+        function getTimestamp() {
+            const now = new Date();
+            const date = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth()+1).padStart(2, '0')}`;
+            const time = `${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`;
+            return `[${date} ${time}]`;
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+                       .replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        }
+
+        function formatNotes(text) {
+            if (!text) return '<span style="color:#555">No notes yet.</span>';
+            // Highlight timestamps
+            let safeText = escapeHtml(text);
+            // Regex to find [DD/MM HH:MM] and wrap in span
+            return safeText.replace(/\[\d{2}\/\d{2}\s\d{1,2}:\d{2}\]/g, match => `<span class="timestamp-note">${match}</span>`);
+        }
+
+        // Allow 'Enter' in password modal
+        document.getElementById('passInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') submitAuth();
+        });
+
+        // Make functions global for inline onclick
+        window.requestAuth = requestAuth;
+        window.openStatusUI = openStatusUI;
+        window.openNotesUI = openNotesUI;
+        window.deleteTask = deleteTask;
+        window.triggerRobot = openTacticalMenu; // Changed to open menu
+        window.enhanceDirective = enhanceDirective;
+        window.requestAiAnalysis = requestAiAnalysis;
+        window.requestAiMotivation = requestAiMotivation;
+
+    </script>
+</body>
+</html>
